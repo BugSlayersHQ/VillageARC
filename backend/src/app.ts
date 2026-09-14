@@ -9,6 +9,7 @@ import healthRouter from './routes/health.route.js';
 import adminRouter from './routes/admin.route.js';
 import webhookRouter from './routes/webhook.routes.js';
 import userRouter from './routes/user.route.js';
+import fileRoutes from './routes/file.routes.js';
 
 export const app = express();
 
@@ -32,6 +33,7 @@ app.use('/api', healthRouter);
 app.use('/api/admin', adminRouter);
 app.use('/api/user', userRouter);
 app.use('/api/users', userRouter);
+app.use('/api/files', fileRoutes);
 
 // Error handling middleware
 app.use(errorMiddleware);
