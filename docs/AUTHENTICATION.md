@@ -119,16 +119,15 @@ Roles are securely stored in Clerk's `publicMetadata`:
 
 ## 5. The Admin Signup Flow
 
-The system handles Admin onboarding automatically via Clerk webhooks (`POST /api/webhooks/clerk`). When a user signs up independently (i.e. not via an invite), they are recognized as a new Admin.
+Admin privilege is granted only by `POST /api/admin/signup` (`protect` only — not `authorize('ADMIN')`). The Clerk webhook never writes `publicMetadata.role` and never grants ADMIN.
 
 ### Step-by-Step Process:
 
 1.  **Authenticate:** User creates/authenticates a Clerk account.
-2.  **Webhook Trigger:** Clerk sends a `user.created` webhook to the backend.
-3.  **Process:** The webhook controller checks if the user has a `role` of `USER` and an `adminId` in their metadata.
-4.  **Admin Assignment:** Since independent signups do not have this metadata, they fall into the self-serve signup branch.
-5.  **Provision:** Backend creates the PostgreSQL `Admin` record and links it to the `clerkUserId`.
-6.  **Success:** The new tenant owner (Admin) is fully provisioned in the application database.
+2.  **Signup:** The authenticated caller hits `POST /api/admin/signup`.
+3.  **Guards:** Existing Prisma User identities and Clerk `USER` roles are rejected with `409`. Existing `ADMIN` role is idempotent success.
+4.  **Grant:** Backend sets Clerk `publicMetadata.role` to `ADMIN` and upserts the PostgreSQL `Admin` row by `clerkUserId`.
+5.  **Invites:** Invited users are created later through Clerk invitations (`role: USER`, `adminId`) and synchronized by the `user.created` webhook.
 
 ---
 

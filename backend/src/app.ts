@@ -31,6 +31,7 @@ app.use(morgan('dev'));
 app.use('/api', healthRouter);
 app.use('/api/admin', adminRouter);
 app.use('/api/user', userRouter);
+app.use('/api/users', userRouter);
 
 // Error handling middleware
 app.use(errorMiddleware);
