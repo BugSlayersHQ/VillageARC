@@ -71,15 +71,15 @@ File status
 
 ## Storage Strategy
 
-* AWS S3 is used for object storage.
-* The AWS SDK v3 `S3Client` communicates with AWS S3 using IAM credentials.
-* PostgreSQL stores only the `storageKey` required to locate the S3 object.
-* No AWS S3 URLs or credentials are stored in the database.
-* The S3 bucket remains private.
-* Presigned download URLs are generated on demand.
-* Presigned URLs expire after 300 seconds (5 minutes).
-* Archiving a file does **not** delete its S3 object.
-* Restoring a file makes the archived record available again without re-uploading the document.
+- AWS S3 is used for object storage.
+- The AWS SDK v3 `S3Client` communicates with AWS S3 using IAM credentials.
+- PostgreSQL stores only the `storageKey` required to locate the S3 object.
+- No AWS S3 URLs or credentials are stored in the database.
+- The S3 bucket remains private.
+- Presigned download URLs are generated on demand.
+- Presigned URLs expire after 300 seconds (5 minutes).
+- Archiving a file does **not** delete its S3 object.
+- Restoring a file makes the archived record available again without re-uploading the document.
 
 Example storage key:
 
@@ -320,14 +320,14 @@ Database updated
 
 Archiving:
 
-* Does not delete the S3 object.
-* Does not delete the PostgreSQL `File` record.
-* Does not remove the file's processing history.
-* Does not remove `FilePage` records.
-* Prevents normal users from accessing the file.
-* Prevents normal file operations such as assignment/update.
-* Allows administrators to inspect archived records.
-* Allows the file to be restored later.
+- Does not delete the S3 object.
+- Does not delete the PostgreSQL `File` record.
+- Does not remove the file's processing history.
+- Does not remove `FilePage` records.
+- Prevents normal users from accessing the file.
+- Prevents normal file operations such as assignment/update.
+- Allows administrators to inspect archived records.
+- Allows the file to be restored later.
 
 ---
 
@@ -462,10 +462,10 @@ Delete assignment row
 
 The file remains:
 
-* in AWS S3
-* in PostgreSQL
-* available to the Admin
-* available for future assignment
+- in AWS S3
+- in PostgreSQL
+- available to the Admin
+- available for future assignment
 
 Only the relationship between the file and user is removed.
 
@@ -579,26 +579,26 @@ Returns archived files managed by the authenticated Admin.
 
 ### `GET /api/files/user/:userId`
 
-* ADMIN can view the user's assigned files.
-* USER can only access their own user ID.
-* Normal users cannot use this endpoint to inspect another user's files.
+- ADMIN can view the user's assigned files.
+- USER can only access their own user ID.
+- Normal users cannot use this endpoint to inspect another user's files.
 
 ### `GET /api/files/:id`
 
-* ADMIN can access files they manage.
-* USER must have an assignment.
-* Archived files are not available to normal users.
+- ADMIN can access files they manage.
+- USER must have an assignment.
+- Archived files are not available to normal users.
 
 ### `GET /api/files/:id/download`
 
-* ADMIN can download files they manage.
-* USER must be assigned to the file.
-* USER cannot download archived files.
+- ADMIN can download files they manage.
+- USER must be assigned to the file.
+- USER cannot download archived files.
 
 ### `GET /api/files/:id/assignments`
 
-* ADMIN can view assignments for their file.
-* USER can only view their own assignment information.
+- ADMIN can view assignments for their file.
+- USER can only view their own assignment information.
 
 ### Archive / Restore
 
@@ -966,11 +966,11 @@ curl -X POST http://localhost:4000/api/files/create \
 
 Verify:
 
-* File is accepted.
-* S3 object is created.
-* PostgreSQL `File` record is created.
-* `status` is `UPLOADED`.
-* `isArchived` is `false`.
+- File is accepted.
+- S3 object is created.
+- PostgreSQL `File` record is created.
+- `status` is `UPLOADED`.
+- `isArchived` is `false`.
 
 ---
 
@@ -1026,9 +1026,9 @@ archivedById != null
 
 Also verify:
 
-* S3 object still exists.
-* File database record still exists.
-* FilePage records still exist.
+- S3 object still exists.
+- File database record still exists.
+- FilePage records still exist.
 
 ---
 
@@ -1073,9 +1073,9 @@ curl -X DELETE http://localhost:4000/api/files/1/assign/7 \
 
 Verify:
 
-* Assignment is removed.
-* File still exists.
-* S3 object still exists.
+- Assignment is removed.
+- File still exists.
+- S3 object still exists.
 
 ---
 
@@ -1143,54 +1143,54 @@ ADMIN → restore active file → error
 
 ### AWS
 
-* [ ] AWS S3 bucket created
-* [ ] S3 bucket configured as **private**
-* [ ] IAM credentials configured
-* [ ] Required `STORAGE_*` environment variables added
-* [ ] Real credentials are not committed to Git
+- [ ] AWS S3 bucket created
+- [ ] S3 bucket configured as **private**
+- [ ] IAM credentials configured
+- [ ] Required `STORAGE_*` environment variables added
+- [ ] Real credentials are not committed to Git
 
 ### Database
 
-* [ ] Prisma schema formatted
-* [ ] Prisma schema validated
-* [ ] File migration created/applied
-* [ ] Prisma Client generated
-* [ ] `FileStatus` enum exists
-* [ ] `FilePageStatus` enum exists
-* [ ] `FilePage` model exists
-* [ ] Archive fields exist on `File`
-* [ ] `FileAssignment` unique constraint exists
+- [ ] Prisma schema formatted
+- [ ] Prisma schema validated
+- [ ] File migration created/applied
+- [ ] Prisma Client generated
+- [ ] `FileStatus` enum exists
+- [ ] `FilePageStatus` enum exists
+- [ ] `FilePage` model exists
+- [ ] Archive fields exist on `File`
+- [ ] `FileAssignment` unique constraint exists
 
 ### File Management
 
-* [ ] Backend starts successfully with `pnpm dev`
-* [ ] PDF upload tested
-* [ ] Image upload tested
-* [ ] 20 MB size limit tested
-* [ ] MIME validation tested
-* [ ] S3 object creation verified
-* [ ] Active file listing tested
-* [ ] Archived file listing tested
-* [ ] File metadata update tested
-* [ ] Archive tested
-* [ ] Restore tested
-* [ ] Assignment tested
-* [ ] Assignment removal tested
-* [ ] Download tested
-* [ ] Presigned URL expiry tested
-* [ ] Unauthorized download tested
-* [ ] Cross-user access tested
-* [ ] Archived-user access tested
+- [ ] Backend starts successfully with `pnpm dev`
+- [ ] PDF upload tested
+- [ ] Image upload tested
+- [ ] 20 MB size limit tested
+- [ ] MIME validation tested
+- [ ] S3 object creation verified
+- [ ] Active file listing tested
+- [ ] Archived file listing tested
+- [ ] File metadata update tested
+- [ ] Archive tested
+- [ ] Restore tested
+- [ ] Assignment tested
+- [ ] Assignment removal tested
+- [ ] Download tested
+- [ ] Presigned URL expiry tested
+- [ ] Unauthorized download tested
+- [ ] Cross-user access tested
+- [ ] Archived-user access tested
 
 ### Processing Foundation
 
-* [ ] File-level processing status available
-* [ ] Page-level status available
-* [ ] `FilePage` unique `(fileId, pageNumber)` constraint verified
-* [ ] Page confidence can be stored
-* [ ] Page processing result can be stored as JSON
-* [ ] Inngest workflow integration tested separately
-* [ ] FastAPI page-processing integration tested separately
+- [ ] File-level processing status available
+- [ ] Page-level status available
+- [ ] `FilePage` unique `(fileId, pageNumber)` constraint verified
+- [ ] Page confidence can be stored
+- [ ] Page processing result can be stored as JSON
+- [ ] Inngest workflow integration tested separately
+- [ ] FastAPI page-processing integration tested separately
 
 ---
 
