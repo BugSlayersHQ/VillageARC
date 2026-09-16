@@ -1,0 +1,131 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Land Record AI Result",
+  "type": "object",
+  "required": ["success", "data"],
+  "properties": {
+    "success": {
+      "type": "boolean"
+    },
+    "data": {
+      "type": "object",
+      "required": [
+        "current_location",
+        "record_location",
+        "land_records",
+        "mutation_records",
+        "registration_information"
+      ],
+      "properties": {
+        "current_location": {
+          "$ref": "#/$defs/location"
+        },
+        "record_location": {
+          "$ref": "#/$defs/location"
+        },
+        "land_records": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/landRecord"
+          }
+        },
+        "mutation_records": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/mutation"
+          }
+        },
+        "registration_information": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/registration"
+          }
+        },
+        "raw_cells": {
+          "type": "array"
+        }
+      }
+    }
+  },
+  "$defs": {
+    "location": {
+      "type": "object",
+      "properties": {
+        "district": { "type": ["string", "null"] },
+        "tehsil": { "type": ["string", "null"] },
+        "village": { "type": ["string", "null"] }
+      },
+      "required": ["district", "tehsil", "village"]
+    },
+    "landRecord": {
+      "type": "object",
+      "required": [
+        "landowner_details",
+        "survey_number",
+        "khasra_number",
+        "khata_number",
+        "plot_area",
+        "land_classification",
+        "ownership_details"
+      ],
+      "properties": {
+        "landowner_details": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": { "type": ["string", "null"] },
+              "father_name": { "type": ["string", "null"] },
+              "address": { "type": ["string", "null"] }
+            }
+          }
+        },
+        "survey_number": {
+          "type": ["string", "null"]
+        },
+        "khasra_number": {
+          "type": ["string", "null"]
+        },
+        "khata_number": {
+          "type": ["string", "null"]
+        },
+        "plot_area": {
+          "type": ["object", "null"],
+          "properties": {
+            "value": { "type": ["string", "null"] },
+            "unit": { "type": ["string", "null"] }
+          }
+        },
+        "land_classification": {
+          "type": ["string", "null"]
+        },
+        "ownership_details": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "type": { "type": ["string", "null"] },
+              "details": { "type": ["string", "null"] }
+            }
+          }
+        }
+      }
+    },
+    "mutation": {
+      "type": "object",
+      "properties": {
+        "mutation_number": { "type": ["string", "null"] },
+        "date": { "type": ["string", "null"] },
+        "details": { "type": ["string", "null"] }
+      }
+    },
+    "registration": {
+      "type": "object",
+      "properties": {
+        "registration_number": { "type": ["string", "null"] },
+        "date": { "type": ["string", "null"] },
+        "details": { "type": ["string", "null"] }
+      }
+    }
+  }
+}

@@ -1,0 +1,7 @@
+path: /teamspace/studios/this_studio/land_record_ai/data/yolo
+
+train: images/train
+val: images/val
+
+names:
+  0: handwritten_cell

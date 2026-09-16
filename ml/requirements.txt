@@ -1,0 +1,11 @@
+fastapi
+uvicorn[standard]
+python-multipart
+PyMuPDF
+ultralytics
+surya-ocr==0.22.1
+torch
+torchvision
+Pillow
+numpy
+requests
