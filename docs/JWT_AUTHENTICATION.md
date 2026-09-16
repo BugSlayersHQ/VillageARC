@@ -10,27 +10,27 @@
 
 ### Admin
 
-| Field         | Type             | Notes                       |
-| ------------- | ---------------- | --------------------------- |
-| `id`          | `number`         | Primary key                 |
-| `name`        | `string \| null` | Full name                   |
-| `email`       | `string \| null` | Unique                      |
-| `passwordHash`| `string \| null` | Never returned in responses |
-| `createdAt`   | ISO 8601         |                             |
-| `updatedAt`   | ISO 8601         |                             |
+| Field          | Type             | Notes                       |
+| -------------- | ---------------- | --------------------------- |
+| `id`           | `number`         | Primary key                 |
+| `name`         | `string \| null` | Full name                   |
+| `email`        | `string \| null` | Unique                      |
+| `passwordHash` | `string \| null` | Never returned in responses |
+| `createdAt`    | ISO 8601         |                             |
+| `updatedAt`    | ISO 8601         |                             |
 
 ### User
 
-| Field         | Type             | Notes                       |
-| ------------- | ---------------- | --------------------------- |
-| `id`          | `number`         | Primary key                 |
-| `name`        | `string`         | Full name                   |
-| `email`       | `string`         | Unique                      |
-| `passwordHash`| `string \| null` | Never returned in responses |
-| `phone`       | `string \| null` |                             |
-| `adminId`     | `number`         | Owning admin's ID           |
-| `createdAt`   | ISO 8601         |                             |
-| `updatedAt`   | ISO 8601         |                             |
+| Field          | Type             | Notes                       |
+| -------------- | ---------------- | --------------------------- |
+| `id`           | `number`         | Primary key                 |
+| `name`         | `string`         | Full name                   |
+| `email`        | `string`         | Unique                      |
+| `passwordHash` | `string \| null` | Never returned in responses |
+| `phone`        | `string \| null` |                             |
+| `adminId`      | `number`         | Owning admin's ID           |
+| `createdAt`    | ISO 8601         |                             |
+| `updatedAt`    | ISO 8601         |                             |
 
 ---
 
@@ -42,13 +42,13 @@ Create a new Admin or User account. Sets the `accessToken` cookie on success.
 
 **Request Body**
 
-| Field      | Type     | Required       | Description                                    |
-| ---------- | -------- | -------------- | ---------------------------------------------- |
-| `email`    | `string` | ✅              | Valid email address                            |
-| `password` | `string` | ✅              | Minimum 6 characters                           |
-| `name`     | `string` | ❌              | Full name                                      |
-| `role`     | `string` | ❌              | `"ADMIN"` or `"USER"` — defaults to `"USER"`  |
-| `adminId`  | `number` | ✅ (if USER)   | ID of the admin this user belongs to           |
+| Field      | Type     | Required     | Description                                  |
+| ---------- | -------- | ------------ | -------------------------------------------- |
+| `email`    | `string` | ✅           | Valid email address                          |
+| `password` | `string` | ✅           | Minimum 6 characters                         |
+| `name`     | `string` | ❌           | Full name                                    |
+| `role`     | `string` | ❌           | `"ADMIN"` or `"USER"` — defaults to `"USER"` |
+| `adminId`  | `number` | ✅ (if USER) | ID of the admin this user belongs to         |
 
 **Example — Register Admin**
 
@@ -108,8 +108,8 @@ Authenticate with email + password. Sets the `accessToken` cookie (valid 24 hour
 
 | Field      | Type     | Required |
 | ---------- | -------- | -------- |
-| `email`    | `string` | ✅        |
-| `password` | `string` | ✅        |
+| `email`    | `string` | ✅       |
+| `password` | `string` | ✅       |
 
 **Example**
 
@@ -218,9 +218,9 @@ Create a new user under the authenticated admin.
 
 | Field   | Type     | Required |
 | ------- | -------- | -------- |
-| `email` | `string` | ✅        |
-| `name`  | `string` | ❌        |
-| `phone` | `string` | ❌        |
+| `email` | `string` | ✅       |
+| `name`  | `string` | ❌       |
+| `phone` | `string` | ❌       |
 
 **Example**
 
@@ -290,7 +290,7 @@ Client                          Server
   |-- POST /api/auth/login -----> |
   |                               |-- Verify email + bcrypt hash
   |                               |-- Sign JWT {userId, role}
-  |<-- 200 OK + Set-Cookie: -----| 
+  |<-- 200 OK + Set-Cookie: -----|
   |   accessToken=<jwt>; HttpOnly |
   |                               |
   |-- GET /api/auth/me ---------->|
@@ -303,20 +303,20 @@ Client                          Server
 
 ## Role-Based Access
 
-| Role    | Allowed                                           |
-| ------- | ------------------------------------------------- |
-| `ADMIN` | All file routes, user management, `/api/auth/me`  |
-| `USER`  | Assigned file viewing, `/api/auth/me`             |
+| Role    | Allowed                                          |
+| ------- | ------------------------------------------------ |
+| `ADMIN` | All file routes, user management, `/api/auth/me` |
+| `USER`  | Assigned file viewing, `/api/auth/me`            |
 
 ---
 
 ## Token Details
 
-| Property  | Value                                          |
-| --------- | ---------------------------------------------- |
-| Algorithm | `HS256`                                        |
-| Expiry    | 24 hours                                       |
-| Storage   | HTTP-only cookie (`accessToken`)               |
+| Property  | Value                                         |
+| --------- | --------------------------------------------- |
+| Algorithm | `HS256`                                       |
+| Expiry    | 24 hours                                      |
+| Storage   | HTTP-only cookie (`accessToken`)              |
 | Payload   | `{ userId: number, role: "ADMIN" \| "USER" }` |
 
 ---
