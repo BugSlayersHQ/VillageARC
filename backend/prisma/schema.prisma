@@ -37,55 +37,56 @@ model Admin {
 }
 
 model User {
-  id          Int     @id @default(autoincrement())
-  clerkUserId String  @unique
-  name        String
-  email       String  @unique
-  phone       String?
-  adminId     Int
+  id           Int              @id @default(autoincrement())
+  clerkUserId  String           @unique
+  name         String
+  email        String           @unique
+  phone        String?
 
-  admin       Admin            @relation(fields: [adminId], references: [id])
-  assignments FileAssignment[] @relation("FileAssignments")
+  adminId      Int
+  admin        Admin            @relation(fields: [adminId], references: [id])
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  assignments  FileAssignment[] @relation("FileAssignments")
+
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
 }
 
 model File {
-  id           Int    @id @default(autoincrement())
+  id           Int        @id @default(autoincrement())
   originalName String
   fileName     String
   mimeType     String
   size         Int
   storageKey   String
 
-  status FileStatus @default(UPLOADED)
+  status       FileStatus @default(UPLOADED)
 
   uploadedById Int
-  uploadedBy   Admin @relation(fields: [uploadedById], references: [id])
+  uploadedBy   Admin      @relation(fields: [uploadedById], references: [id])
 
   isArchived   Boolean   @default(false)
   archivedAt   DateTime?
   archivedById Int?
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
-  assignments FileAssignment[]
-  pages       FilePage[]
+  assignments  FileAssignment[]
+  pages        FilePage[]
 }
 
 model FileAssignment {
-  id         Int @id @default(autoincrement())
+  id         Int      @id @default(autoincrement())
   fileId     Int
   userId     Int
   assignedBy Int
 
-  file     File  @relation(fields: [fileId], references: [id], onDelete: Cascade)
-  user     User  @relation("FileAssignments", fields: [userId], references: [id], onDelete: Cascade)
-  assigner Admin @relation(fields: [assignedBy], references: [id])
+  file       File     @relation(fields: [fileId], references: [id], onDelete: Cascade)
+  user       User     @relation("FileAssignments", fields: [userId], references: [id], onDelete: Cascade)
+  assigner   Admin    @relation(fields: [assignedBy], references: [id])
 
-  createdAt DateTime @default(now())
+  createdAt  DateTime @default(now())
 
   @@unique([fileId, userId])
 }
@@ -98,10 +99,10 @@ model FilePage {
   confidence Float?
   result     Json?
 
-  file File @relation(fields: [fileId], references: [id], onDelete: Cascade)
+  file       File           @relation(fields: [fileId], references: [id], onDelete: Cascade)
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt  DateTime       @default(now())
+  updatedAt  DateTime       @updatedAt
 
   @@unique([fileId, pageNumber])
 }
