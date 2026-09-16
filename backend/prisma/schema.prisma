@@ -7,14 +7,32 @@ datasource db {
   provider = "postgresql"
 }
 
+enum FileStatus {
+  UPLOADED
+  PROCESSING
+  COMPLETED
+  NEEDS_VERIFICATION
+  VERIFIED
+  FAILED
+}
+
+enum FilePageStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  NEEDS_VERIFICATION
+  VERIFIED
+  FAILED_PERMANENT
+}
+
 model Admin {
   id          Int      @id @default(autoincrement())
   clerkUserId String   @unique
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  users User[]
-  files File[]
+  users       User[]
+  files       File[]
   assignments FileAssignment[]
 }
 
@@ -35,20 +53,27 @@ model User {
 }
 
 model File {
-  id           Int              @id @default(autoincrement())
+  id           Int        @id @default(autoincrement())
   originalName String
   fileName     String
   mimeType     String
   size         Int
   storageKey   String
 
+  status       FileStatus @default(UPLOADED)
+
   uploadedById Int
-  uploadedBy   Admin            @relation(fields: [uploadedById], references: [id])
+  uploadedBy   Admin      @relation(fields: [uploadedById], references: [id])
+
+  isArchived   Boolean   @default(false)
+  archivedAt   DateTime?
+  archivedById Int?
+
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
   assignments  FileAssignment[]
-
-  createdAt    DateTime         @default(now())
-  updatedAt    DateTime         @updatedAt
+  pages        FilePage[]
 }
 
 model FileAssignment {
@@ -64,4 +89,20 @@ model FileAssignment {
   createdAt  DateTime @default(now())
 
   @@unique([fileId, userId])
+}
+
+model FilePage {
+  id         Int            @id @default(autoincrement())
+  fileId     Int
+  pageNumber Int
+  status     FilePageStatus @default(PENDING)
+  confidence Float?
+  result     Json?
+
+  file       File           @relation(fields: [fileId], references: [id], onDelete: Cascade)
+
+  createdAt  DateTime       @default(now())
+  updatedAt  DateTime       @updatedAt
+
+  @@unique([fileId, pageNumber])
 }
