@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import { clerkClient } from '@clerk/express';
+
 import { z } from 'zod';
 
 import { prisma } from '../lib/prisma.js';
@@ -28,9 +28,9 @@ export const createUser = async (req: Request, res: Response, next: NextFunction
 
     const { name, email, phone } = parseResult.data;
 
-    const clerkAdminId = req.userId;
+    const adminId = req.user?.userId;
 
-    if (!clerkAdminId) {
+    if (!adminId) {
       const error: AppError = new Error('Unauthorized');
       error.statusCode = 401;
       return next(error);
@@ -38,7 +38,7 @@ export const createUser = async (req: Request, res: Response, next: NextFunction
 
     const admin = await prisma.admin.findUnique({
       where: {
-        clerkUserId: clerkAdminId,
+        id: adminId,
       },
     });
 
@@ -60,36 +60,21 @@ export const createUser = async (req: Request, res: Response, next: NextFunction
       return next(error);
     }
 
-    const frontendUrl = process.env.FRONTEND_URL?.replace(/\/$/, '');
-
-    if (!frontendUrl) {
-      const error: AppError = new Error('FRONTEND_URL is not configured');
-      error.statusCode = 500;
-      return next(error);
-    }
-
-    const redirectUrl = `${frontendUrl}/login`;
-
-    const invitation = await clerkClient.invitations.createInvitation({
-      emailAddress: email,
-      redirectUrl,
-      publicMetadata: {
-        role: 'USER',
+    const user = await prisma.user.create({
+      data: {
+        email,
         name: name || '',
-        phone: phone || '',
+        phone: phone || null,
         adminId: admin.id,
       },
-      notify: true,
-      ignoreExisting: false,
     });
 
     return res.status(201).json({
       success: true,
-      message: 'Invitation sent successfully via Clerk email',
+      message: 'User created successfully',
       data: {
-        id: invitation.id,
-        emailAddress: invitation.emailAddress,
-        status: invitation.status,
+        id: user.id,
+        email: user.email,
       },
     });
   } catch (error: unknown) {
@@ -125,7 +110,7 @@ export const createUser = async (req: Request, res: Response, next: NextFunction
 
 export const getAllUsers = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    if (!req.userId) {
+    if (!req.user || !req.user.userId) {
       const error: AppError = new Error('Unauthorized');
       error.statusCode = 401;
       return next(error);
@@ -133,7 +118,7 @@ export const getAllUsers = async (req: Request, res: Response, next: NextFunctio
 
     const admin = await prisma.admin.findUnique({
       where: {
-        clerkUserId: req.userId,
+        id: req.user.userId,
       },
     });
     if (!admin) {
@@ -148,7 +133,6 @@ export const getAllUsers = async (req: Request, res: Response, next: NextFunctio
       },
       select: {
         id: true,
-        clerkUserId: true,
         name: true,
         email: true,
         phone: true,
