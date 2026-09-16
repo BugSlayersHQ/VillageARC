@@ -26,10 +26,12 @@ enum FilePageStatus {
 }
 
 model Admin {
-  id          Int      @id @default(autoincrement())
-  clerkUserId String   @unique
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id           Int      @id @default(autoincrement())
+  name         String?
+  email        String?  @unique
+  passwordHash String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
   users       User[]
   files       File[]
@@ -38,9 +40,9 @@ model Admin {
 
 model User {
   id           Int              @id @default(autoincrement())
-  clerkUserId  String           @unique
   name         String
   email        String           @unique
+  passwordHash String?
   phone        String?
 
   adminId      Int

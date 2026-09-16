@@ -10,15 +10,15 @@ const isPrismaUniqueConstraintError = (error: unknown): boolean => {
   return typeof error === 'object' && error !== null && 'code' in error && error.code === 'P2002';
 };
 
-const requireUserId = (req: Request, next: NextFunction): string | null => {
-  if (!req.userId) {
+const requireUserId = (req: Request, next: NextFunction): number | null => {
+  if (!req.user || !req.user.userId) {
     const error: AppError = new Error('Unauthorized');
     error.statusCode = 401;
     next(error);
     return null;
   }
 
-  return req.userId;
+  return req.user.userId;
 };
 
 const parsePositiveInt = (value: string | string[] | undefined, label: string): number => {
@@ -34,14 +34,14 @@ const parsePositiveInt = (value: string | string[] | undefined, label: string): 
   return parsed;
 };
 
-const getCurrentAdmin = async (clerkUserId: string) => {
+const getCurrentAdmin = async (userId: number) => {
   return prisma.admin.findUnique({
-    where: { clerkUserId },
+    where: { id: userId },
   });
 };
 
-const requireCurrentAdmin = async (clerkUserId: string) => {
-  const admin = await getCurrentAdmin(clerkUserId);
+const requireCurrentAdmin = async (userId: number) => {
+  const admin = await getCurrentAdmin(userId);
 
   if (!admin) {
     const error: AppError = new Error('Admin not found');
@@ -112,8 +112,8 @@ export const uploadFile = async (req: Request, res: Response, next: NextFunction
       return next(error);
     }
 
-    const clerkUserId = requireUserId(req, next);
-    if (!clerkUserId) {
+    const authUserId = requireUserId(req, next);
+    if (!authUserId) {
       return;
     }
 
@@ -123,7 +123,7 @@ export const uploadFile = async (req: Request, res: Response, next: NextFunction
       return next(error);
     }
 
-    const admin = await requireCurrentAdmin(clerkUserId);
+    const admin = await requireCurrentAdmin(authUserId);
 
     const uniqueFileName = `${Date.now()}-${Math.round(Math.random() * 1e9)}-${req.file.originalname}`;
     const storageKey = `land-records/${uniqueFileName}`;
@@ -176,12 +176,12 @@ export const uploadFile = async (req: Request, res: Response, next: NextFunction
 
 export const getAllFiles = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const clerkUserId = requireUserId(req, next);
-    if (!clerkUserId) {
+    const authUserId = requireUserId(req, next);
+    if (!authUserId) {
       return;
     }
 
-    const admin = await requireCurrentAdmin(clerkUserId);
+    const admin = await requireCurrentAdmin(authUserId);
 
     const files = await prisma.file.findMany({
       where: {
@@ -192,7 +192,6 @@ export const getAllFiles = async (req: Request, res: Response, next: NextFunctio
         uploadedBy: {
           select: {
             id: true,
-            clerkUserId: true,
           },
         },
         assignments: {
@@ -200,7 +199,6 @@ export const getAllFiles = async (req: Request, res: Response, next: NextFunctio
             user: {
               select: {
                 id: true,
-                clerkUserId: true,
                 name: true,
                 email: true,
               },
@@ -208,7 +206,6 @@ export const getAllFiles = async (req: Request, res: Response, next: NextFunctio
             assigner: {
               select: {
                 id: true,
-                clerkUserId: true,
               },
             },
           },
@@ -230,12 +227,12 @@ export const getAllFiles = async (req: Request, res: Response, next: NextFunctio
 
 export const getArchivedFiles = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const clerkUserId = requireUserId(req, next);
-    if (!clerkUserId) {
+    const authUserId = requireUserId(req, next);
+    if (!authUserId) {
       return;
     }
 
-    const admin = await requireCurrentAdmin(clerkUserId);
+    const admin = await requireCurrentAdmin(authUserId);
 
     const files = await prisma.file.findMany({
       where: {
@@ -258,14 +255,14 @@ export const getArchivedFiles = async (req: Request, res: Response, next: NextFu
 
 export const getMyFiles = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const clerkUserId = requireUserId(req, next);
-    if (!clerkUserId) {
+    const userId = requireUserId(req, next);
+    if (!userId) {
       return;
     }
 
     const user = await prisma.user.findUnique({
       where: {
-        clerkUserId,
+        id: userId,
       },
     });
 
@@ -288,7 +285,6 @@ export const getMyFiles = async (req: Request, res: Response, next: NextFunction
             uploadedBy: {
               select: {
                 id: true,
-                clerkUserId: true,
               },
             },
           },
@@ -318,8 +314,8 @@ export const getMyFiles = async (req: Request, res: Response, next: NextFunction
 export const getFileById = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const fileId = parsePositiveInt(req.params.id, 'file ID');
-    const clerkUserId = requireUserId(req, next);
-    if (!clerkUserId) {
+    const userId = requireUserId(req, next);
+    if (!userId) {
       return;
     }
 
@@ -329,7 +325,6 @@ export const getFileById = async (req: Request, res: Response, next: NextFunctio
         uploadedBy: {
           select: {
             id: true,
-            clerkUserId: true,
           },
         },
         assignments: {
@@ -337,7 +332,6 @@ export const getFileById = async (req: Request, res: Response, next: NextFunctio
             user: {
               select: {
                 id: true,
-                clerkUserId: true,
                 name: true,
                 email: true,
               },
@@ -345,7 +339,6 @@ export const getFileById = async (req: Request, res: Response, next: NextFunctio
             assigner: {
               select: {
                 id: true,
-                clerkUserId: true,
               },
             },
           },
@@ -359,7 +352,7 @@ export const getFileById = async (req: Request, res: Response, next: NextFunctio
       return next(error);
     }
 
-    const admin = await getCurrentAdmin(clerkUserId);
+    const admin = await getCurrentAdmin(userId);
 
     if (admin) {
       if (file.uploadedById !== admin.id) {
@@ -378,7 +371,7 @@ export const getFileById = async (req: Request, res: Response, next: NextFunctio
     }
 
     const caller = await prisma.user.findUnique({
-      where: { clerkUserId },
+      where: { id: userId },
     });
 
     if (!caller) {
@@ -427,12 +420,12 @@ export const getFileById = async (req: Request, res: Response, next: NextFunctio
 export const updateFile = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const fileId = parsePositiveInt(req.params.id, 'file ID');
-    const clerkUserId = requireUserId(req, next);
-    if (!clerkUserId) {
+    const authUserId = requireUserId(req, next);
+    if (!authUserId) {
       return;
     }
 
-    const admin = await requireCurrentAdmin(clerkUserId);
+    const admin = await requireCurrentAdmin(authUserId);
     const existingFile = await requireOwnedFile(fileId, admin.id);
 
     if (existingFile.isArchived) {
@@ -466,12 +459,12 @@ export const updateFile = async (req: Request, res: Response, next: NextFunction
 export const archiveFile = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const fileId = parsePositiveInt(req.params.id, 'file ID');
-    const clerkUserId = requireUserId(req, next);
-    if (!clerkUserId) {
+    const authUserId = requireUserId(req, next);
+    if (!authUserId) {
       return;
     }
 
-    const admin = await requireCurrentAdmin(clerkUserId);
+    const admin = await requireCurrentAdmin(authUserId);
     const file = await requireOwnedFile(fileId, admin.id);
 
     if (file.isArchived) {
@@ -503,12 +496,12 @@ export const archiveFile = async (req: Request, res: Response, next: NextFunctio
 export const restoreFile = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const fileId = parsePositiveInt(req.params.id, 'file ID');
-    const clerkUserId = requireUserId(req, next);
-    if (!clerkUserId) {
+    const authUserId = requireUserId(req, next);
+    if (!authUserId) {
       return;
     }
 
-    const admin = await requireCurrentAdmin(clerkUserId);
+    const admin = await requireCurrentAdmin(authUserId);
     const file = await requireOwnedFile(fileId, admin.id);
 
     if (!file.isArchived) {
@@ -556,12 +549,12 @@ export const assignFile = async (req: Request, res: Response, next: NextFunction
       return next(error);
     }
 
-    const clerkUserId = requireUserId(req, next);
-    if (!clerkUserId) {
+    const authUserId = requireUserId(req, next);
+    if (!authUserId) {
       return;
     }
 
-    const assigner = await requireCurrentAdmin(clerkUserId);
+    const assigner = await requireCurrentAdmin(authUserId);
     const file = await requireOwnedFile(fileId, assigner.id);
 
     if (file.isArchived) {
@@ -613,7 +606,6 @@ export const assignFile = async (req: Request, res: Response, next: NextFunction
           assigner: {
             select: {
               id: true,
-              clerkUserId: true,
             },
           },
         },
@@ -643,12 +635,12 @@ export const removeFileAssignment = async (req: Request, res: Response, next: Ne
   try {
     const fileId = parsePositiveInt(req.params.id, 'file ID');
     const userId = parsePositiveInt(req.params.userId, 'user ID');
-    const clerkUserId = requireUserId(req, next);
-    if (!clerkUserId) {
+    const authUserId = requireUserId(req, next);
+    if (!authUserId) {
       return;
     }
 
-    const admin = await requireCurrentAdmin(clerkUserId);
+    const admin = await requireCurrentAdmin(authUserId);
     await requireOwnedFile(fileId, admin.id);
 
     const targetUser = await prisma.user.findUnique({
@@ -698,8 +690,8 @@ export const removeFileAssignment = async (req: Request, res: Response, next: Ne
 export const getFileAssignments = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const fileId = parsePositiveInt(req.params.id, 'file ID');
-    const clerkUserId = requireUserId(req, next);
-    if (!clerkUserId) {
+    const userId = requireUserId(req, next);
+    if (!userId) {
       return;
     }
 
@@ -713,7 +705,7 @@ export const getFileAssignments = async (req: Request, res: Response, next: Next
       return next(error);
     }
 
-    const admin = await getCurrentAdmin(clerkUserId);
+    const admin = await getCurrentAdmin(userId);
 
     if (admin) {
       if (file.uploadedById !== admin.id) {
@@ -728,7 +720,6 @@ export const getFileAssignments = async (req: Request, res: Response, next: Next
           user: {
             select: {
               id: true,
-              clerkUserId: true,
               name: true,
               email: true,
             },
@@ -736,7 +727,6 @@ export const getFileAssignments = async (req: Request, res: Response, next: Next
           assigner: {
             select: {
               id: true,
-              clerkUserId: true,
             },
           },
         },
@@ -751,7 +741,7 @@ export const getFileAssignments = async (req: Request, res: Response, next: Next
     }
 
     const caller = await prisma.user.findUnique({
-      where: { clerkUserId },
+      where: { id: userId },
     });
 
     if (!caller) {
@@ -769,7 +759,6 @@ export const getFileAssignments = async (req: Request, res: Response, next: Next
         user: {
           select: {
             id: true,
-            clerkUserId: true,
             name: true,
             email: true,
           },
@@ -777,7 +766,6 @@ export const getFileAssignments = async (req: Request, res: Response, next: Next
         assigner: {
           select: {
             id: true,
-            clerkUserId: true,
           },
         },
       },
@@ -804,8 +792,8 @@ export const getFileAssignments = async (req: Request, res: Response, next: Next
 export const downloadFile = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const fileId = parsePositiveInt(req.params.id, 'file ID');
-    const clerkUserId = requireUserId(req, next);
-    if (!clerkUserId) {
+    const userId = requireUserId(req, next);
+    if (!userId) {
       return;
     }
 
@@ -825,7 +813,7 @@ export const downloadFile = async (req: Request, res: Response, next: NextFuncti
       return next(error);
     }
 
-    const admin = await getCurrentAdmin(clerkUserId);
+    const admin = await getCurrentAdmin(userId);
 
     if (admin) {
       if (file.uploadedById !== admin.id) {
@@ -837,7 +825,7 @@ export const downloadFile = async (req: Request, res: Response, next: NextFuncti
       // still exists in S3 specifically so it remains auditable.
     } else {
       const caller = await prisma.user.findUnique({
-        where: { clerkUserId },
+        where: { id: userId },
       });
 
       if (!caller) {
@@ -903,12 +891,12 @@ export const updateFilesFromCsv = async (req: Request, res: Response, next: Next
       return next(error);
     }
 
-    const clerkUserId = requireUserId(req, next);
-    if (!clerkUserId) {
+    const authUserId = requireUserId(req, next);
+    if (!authUserId) {
       return;
     }
 
-    const admin = await requireCurrentAdmin(clerkUserId);
+    const admin = await requireCurrentAdmin(authUserId);
 
     const csvContent = req.file.buffer
       .toString('utf8')
