@@ -186,6 +186,7 @@ export const getAllFiles = async (req: Request, res: Response, next: NextFunctio
     const files = await prisma.file.findMany({
       where: {
         uploadedById: admin.id,
+        isArchived: false,
       },
       include: {
         uploadedBy: {
@@ -227,6 +228,34 @@ export const getAllFiles = async (req: Request, res: Response, next: NextFunctio
   }
 };
 
+export const getArchivedFiles = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const clerkUserId = requireUserId(req, next);
+    if (!clerkUserId) {
+      return;
+    }
+
+    const admin = await requireCurrentAdmin(clerkUserId);
+
+    const files = await prisma.file.findMany({
+      where: {
+        uploadedById: admin.id,
+        isArchived: true,
+      },
+      orderBy: { archivedAt: 'desc' },
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: 'Archived files fetched successfully',
+      data: files,
+    });
+  } catch (error) {
+    console.error(error);
+    return next(error);
+  }
+};
+
 export const getMyFiles = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const clerkUserId = requireUserId(req, next);
@@ -249,6 +278,9 @@ export const getMyFiles = async (req: Request, res: Response, next: NextFunction
     const assignments = await prisma.fileAssignment.findMany({
       where: {
         userId: user.id,
+        file: {
+          isArchived: false,
+        },
       },
       include: {
         file: {
@@ -336,6 +368,8 @@ export const getFileById = async (req: Request, res: Response, next: NextFunctio
         return next(error);
       }
 
+      // Admins can always see a file's details, archived or not --
+      // they need this to decide whether to restore it.
       return res.status(200).json({
         success: true,
         message: 'File fetched successfully',
@@ -368,6 +402,14 @@ export const getFileById = async (req: Request, res: Response, next: NextFunctio
       return next(error);
     }
 
+    // Assigned officers lose access once a file is archived --
+    // the case is considered closed/retired from active work.
+    if (file.isArchived) {
+      const error: AppError = new Error('This file has been archived and is no longer available');
+      error.statusCode = 410;
+      return next(error);
+    }
+
     return res.status(200).json({
       success: true,
       message: 'File fetched successfully',
@@ -391,7 +433,13 @@ export const updateFile = async (req: Request, res: Response, next: NextFunction
     }
 
     const admin = await requireCurrentAdmin(clerkUserId);
-    await requireOwnedFile(fileId, admin.id);
+    const existingFile = await requireOwnedFile(fileId, admin.id);
+
+    if (existingFile.isArchived) {
+      const error: AppError = new Error('Cannot update an archived file. Restore it first.');
+      error.statusCode = 409;
+      return next(error);
+    }
 
     const { originalName } = req.body as { originalName?: string };
 
@@ -415,7 +463,7 @@ export const updateFile = async (req: Request, res: Response, next: NextFunction
   }
 };
 
-export const deleteFile = async (req: Request, res: Response, next: NextFunction) => {
+export const archiveFile = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const fileId = parsePositiveInt(req.params.id, 'file ID');
     const clerkUserId = requireUserId(req, next);
@@ -423,29 +471,65 @@ export const deleteFile = async (req: Request, res: Response, next: NextFunction
       return;
     }
 
-    if (!storageBucket) {
-      const error: AppError = new Error('Storage is not configured');
-      error.statusCode = 500;
+    const admin = await requireCurrentAdmin(clerkUserId);
+    const file = await requireOwnedFile(fileId, admin.id);
+
+    if (file.isArchived) {
+      const error: AppError = new Error('File is already archived');
+      error.statusCode = 409;
       return next(error);
+    }
+
+    const archivedFile = await prisma.file.update({
+      where: { id: fileId },
+      data: {
+        isArchived: true,
+        archivedAt: new Date(),
+        archivedById: admin.id,
+      },
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: 'File archived successfully',
+      data: archivedFile,
+    });
+  } catch (error) {
+    console.error(error);
+    return next(error);
+  }
+};
+
+export const restoreFile = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const fileId = parsePositiveInt(req.params.id, 'file ID');
+    const clerkUserId = requireUserId(req, next);
+    if (!clerkUserId) {
+      return;
     }
 
     const admin = await requireCurrentAdmin(clerkUserId);
     const file = await requireOwnedFile(fileId, admin.id);
 
-    await s3.send(
-      new DeleteObjectCommand({
-        Bucket: storageBucket,
-        Key: file.storageKey,
-      }),
-    );
+    if (!file.isArchived) {
+      const error: AppError = new Error('File is not archived');
+      error.statusCode = 409;
+      return next(error);
+    }
 
-    await prisma.file.delete({
+    const restoredFile = await prisma.file.update({
       where: { id: fileId },
+      data: {
+        isArchived: false,
+        archivedAt: null,
+        archivedById: null,
+      },
     });
 
     return res.status(200).json({
       success: true,
-      message: 'File deleted successfully',
+      message: 'File restored successfully',
+      data: restoredFile,
     });
   } catch (error) {
     console.error(error);
@@ -478,7 +562,13 @@ export const assignFile = async (req: Request, res: Response, next: NextFunction
     }
 
     const assigner = await requireCurrentAdmin(clerkUserId);
-    await requireOwnedFile(fileId, assigner.id);
+    const file = await requireOwnedFile(fileId, assigner.id);
+
+    if (file.isArchived) {
+      const error: AppError = new Error('Cannot assign an archived file. Restore it first.');
+      error.statusCode = 409;
+      return next(error);
+    }
 
     const targetUser = await prisma.user.findUnique({
       where: { id: targetUserId },
@@ -743,6 +833,8 @@ export const downloadFile = async (req: Request, res: Response, next: NextFuncti
         error.statusCode = 404;
         return next(error);
       }
+      // Admins can always download, even if archived -- the object
+      // still exists in S3 specifically so it remains auditable.
     } else {
       const caller = await prisma.user.findUnique({
         where: { clerkUserId },
@@ -766,6 +858,14 @@ export const downloadFile = async (req: Request, res: Response, next: NextFuncti
       if (!assignment) {
         const error: AppError = new Error('You are not allowed to download this file');
         error.statusCode = 403;
+        return next(error);
+      }
+
+      if (file.isArchived) {
+        const error: AppError = new Error(
+          'This file has been archived and is no longer available for download',
+        );
+        error.statusCode = 410;
         return next(error);
       }
     }
