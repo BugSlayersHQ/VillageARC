@@ -30,10 +30,27 @@ PostgreSQL / Prisma  (File + FileAssignment metadata only — no URLs stored)
 ## Storage Strategy
 
 - AWS S3 is used for object storage.
+<<<<<<< Updated upstream
 - The AWS SDK v3 `S3Client` communicates with AWS S3 using standard IAM credentials.
 - PostgreSQL stores only the `storageKey` (e.g. `land-records/<unique-filename>`).
 - No AWS S3 URLs or credentials are ever stored in the database.
 - Presigned download URLs are generated on demand and expire after 300 seconds.
+=======
+- The AWS SDK v3 `S3Client` communicates with AWS S3 using IAM credentials.
+- PostgreSQL stores only the `storageKey` required to locate the S3 object.
+- No AWS S3 URLs or credentials are stored in the database.
+- The S3 bucket remains private.
+- Presigned download URLs are generated on demand.
+- Presigned URLs expire after 300 seconds (5 minutes).
+- Archiving a file does **not** delete its S3 object.
+- Restoring a file makes the archived record available again without re-uploading the document.
+
+Example storage key:
+
+```text
+land-records/<unique-filename>
+```
+>>>>>>> Stashed changes
 
 ---
 
@@ -138,7 +155,96 @@ Client  DELETE /api/files/:id  (Admin only)
   → 200 response
 ```
 
+<<<<<<< Updated upstream
 The AWS S3 object is always deleted **before** the database record.
+=======
+### Important behavior
+
+Archiving:
+
+- Does not delete the S3 object.
+- Does not delete the PostgreSQL `File` record.
+- Does not remove the file's processing history.
+- Does not remove `FilePage` records.
+- Prevents normal users from accessing the file.
+- Prevents normal file operations such as assignment/update.
+- Allows administrators to inspect archived records.
+- Allows the file to be restored later.
+
+---
+
+## Restore Flow
+
+An archived file can be restored by an Admin.
+
+```text
+Admin
+PATCH /api/files/:id/restore
+        ↓
+protect
+        ↓
+authorize('ADMIN')
+        ↓
+Find file
+        ↓
+Verify Admin owns file
+        ↓
+Check file is archived
+        ↓
+isArchived = false
+archivedAt = null
+archivedById = null
+        ↓
+Database updated
+        ↓
+200 response
+```
+
+Restoring does not require uploading the document again because the original S3 object was preserved.
+
+---
+
+## File Update Flow
+
+The current update endpoint is limited to metadata.
+
+```text
+PATCH /api/files/:id
+        ↓
+ADMIN authentication
+        ↓
+Verify Admin owns file
+        ↓
+Verify file is not archived
+        ↓
+Update metadata
+        ↓
+Database
+```
+
+Currently supported metadata update:
+
+```json
+{
+  "originalName": "updated-land-record.pdf"
+}
+```
+
+The following are **not replaced by this endpoint**:
+
+```text
+S3 object
+storageKey
+fileName
+mimeType
+size
+FilePage processing results
+```
+
+Actual document-content replacement is not implemented in the current File Management feature.
+
+If content replacement is required later, it should be implemented as a separate workflow rather than treating it as a simple metadata update. That workflow would need to account for the existing S3 object and page-processing results.
+>>>>>>> Stashed changes
 
 ---
 
@@ -163,6 +269,92 @@ Admin  DELETE /api/files/:id/assign/:userId
 
 ---
 
+<<<<<<< Updated upstream
+=======
+## Remove Assignment Flow
+
+Removing an assignment does **not delete the official file**.
+
+```text
+Admin
+DELETE /api/files/:id/assign/:userId
+        ↓
+Find FileAssignment
+        ↓
+404 if not found
+        ↓
+Delete assignment row
+        ↓
+200 response
+```
+
+The file remains:
+
+- in AWS S3
+- in PostgreSQL
+- available to the Admin
+- available for future assignment
+
+Only the relationship between the file and user is removed.
+
+---
+
+## File Processing and Page Tracking
+
+The database contains two levels of processing state.
+
+### File-level status
+
+`File.status` represents the overall processing state of the document.
+
+```text
+UPLOADED
+PROCESSING
+COMPLETED
+NEEDS_VERIFICATION
+VERIFIED
+FAILED
+```
+
+### Page-level status
+
+`FilePage.status` represents the processing state of an individual page.
+
+```text
+PENDING
+PROCESSING
+COMPLETED
+NEEDS_VERIFICATION
+VERIFIED
+FAILED_PERMANENT
+```
+
+Each page belongs to exactly one file.
+
+Example:
+
+```text
+File
+ ├── Page 1 → COMPLETED
+ ├── Page 2 → VERIFIED
+ ├── Page 3 → NEEDS_VERIFICATION
+ └── Page 4 → COMPLETED
+```
+
+The `FilePage` record can store:
+
+```text
+pageNumber
+status
+confidence
+result
+```
+
+This allows the processing system to track results and confidence independently for every page.
+
+---
+
+>>>>>>> Stashed changes
 ## API Endpoints
 
 | Method   | Endpoint                        | Auth     | Role  | Description                                |
@@ -178,11 +370,80 @@ Admin  DELETE /api/files/:id/assign/:userId
 | `DELETE` | `/api/files/:id/assign/:userId` | Required | ADMIN | Remove file assignment from a user         |
 | `GET`    | `/api/files/:id/assignments`    | Required | Any   | List assignments for a file                |
 
+<<<<<<< Updated upstream
 > **Authorization notes:**
 >
 > - `GET /user/:userId` — ADMINs can view any user; USERs can only view their own.
 > - `GET /:id/download` — ADMINs always allowed; USERs only if assigned to the file.
 > - `GET /:id/assignments` — ADMINs see all; USERs see only their own assignment row.
+=======
+### Important
+
+There is intentionally **no normal**:
+
+```text
+DELETE /api/files/:id
+```
+
+endpoint for deleting an official file.
+
+Use:
+
+```text
+PATCH /api/files/:id/archive
+```
+
+instead.
+
+---
+
+## Authorization Rules
+
+### `GET /api/files`
+
+ADMIN-only.
+
+Returns active files managed by the authenticated Admin.
+
+### `GET /api/files/archived`
+
+ADMIN-only.
+
+Returns archived files managed by the authenticated Admin.
+
+### `GET /api/files/user/:userId`
+
+- ADMIN can view the user's assigned files.
+- USER can only access their own user ID.
+- Normal users cannot use this endpoint to inspect another user's files.
+
+### `GET /api/files/:id`
+
+- ADMIN can access files they manage.
+- USER must have an assignment.
+- Archived files are not available to normal users.
+
+### `GET /api/files/:id/download`
+
+- ADMIN can download files they manage.
+- USER must be assigned to the file.
+- USER cannot download archived files.
+
+### `GET /api/files/:id/assignments`
+
+- ADMIN can view assignments for their file.
+- USER can only view their own assignment information.
+
+### Archive / Restore
+
+Only:
+
+```text
+ADMIN
+```
+
+can archive or restore files.
+>>>>>>> Stashed changes
 
 ---
 
@@ -382,7 +643,21 @@ curl -X POST http://localhost:4000/api/files/create \
   -F "file=@/path/to/document.pdf"
 ```
 
+<<<<<<< Updated upstream
 **List all files (Admin)**
+=======
+Verify:
+
+- File is accepted.
+- S3 object is created.
+- PostgreSQL `File` record is created.
+- `status` is `UPLOADED`.
+- `isArchived` is `false`.
+
+---
+
+### List Active Files
+>>>>>>> Stashed changes
 
 ```bash
 curl http://localhost:4000/api/files \
@@ -412,7 +687,46 @@ curl -X DELETE http://localhost:4000/api/files/1 \
   -H "Authorization: Bearer <admin-clerk-token>"
 ```
 
+<<<<<<< Updated upstream
 **Assign to user**
+=======
+Verify:
+
+```text
+isArchived = true
+archivedAt != null
+archivedById != null
+```
+
+Also verify:
+
+- S3 object still exists.
+- File database record still exists.
+- FilePage records still exist.
+
+---
+
+### Restore
+
+```bash
+curl -X PATCH http://localhost:4000/api/files/1/restore \
+  -H "Authorization: Bearer <admin-clerk-token>"
+```
+
+Verify:
+
+```text
+isArchived = false
+archivedAt = null
+archivedById = null
+```
+
+The original S3 object should still be used.
+
+---
+
+### Assign to User
+>>>>>>> Stashed changes
 
 ```bash
 curl -X POST http://localhost:4000/api/files/1/assign \
@@ -430,10 +744,16 @@ curl -X DELETE http://localhost:4000/api/files/1/assign/7 \
 
 **Get user's files**
 
+<<<<<<< Updated upstream
 ```bash
 # As the user themselves:
 curl http://localhost:4000/api/files/user/7 \
   -H "Authorization: Bearer <user-7-clerk-token>"
+=======
+- Assignment is removed.
+- File still exists.
+- S3 object still exists.
+>>>>>>> Stashed changes
 
 # As admin:
 curl http://localhost:4000/api/files/user/7 \
@@ -460,6 +780,7 @@ curl http://localhost:4000/api/files/1/download \
 
 ## Development Checklist
 
+<<<<<<< Updated upstream
 - [ ] AWS S3 bucket created and set to **private**
 - [ ] AWS IAM user created with `s3:PutObject`, `s3:GetObject`, and `s3:DeleteObject` permissions
 - [ ] Four `STORAGE_*` environment variables added to `.env`
@@ -472,3 +793,81 @@ curl http://localhost:4000/api/files/1/download \
 - [ ] Assign tested — verify user can download after assignment
 - [ ] Unauthorized download tested — verify 403 for unassigned user
 - [ ] Cross-user file list tested — verify 403 for normal user accessing another user's files
+=======
+### AWS
+
+- [ ] AWS S3 bucket created
+- [ ] S3 bucket configured as **private**
+- [ ] IAM credentials configured
+- [ ] Required `STORAGE_*` environment variables added
+- [ ] Real credentials are not committed to Git
+
+### Database
+
+- [ ] Prisma schema formatted
+- [ ] Prisma schema validated
+- [ ] File migration created/applied
+- [ ] Prisma Client generated
+- [ ] `FileStatus` enum exists
+- [ ] `FilePageStatus` enum exists
+- [ ] `FilePage` model exists
+- [ ] Archive fields exist on `File`
+- [ ] `FileAssignment` unique constraint exists
+
+### File Management
+
+- [ ] Backend starts successfully with `pnpm dev`
+- [ ] PDF upload tested
+- [ ] Image upload tested
+- [ ] 20 MB size limit tested
+- [ ] MIME validation tested
+- [ ] S3 object creation verified
+- [ ] Active file listing tested
+- [ ] Archived file listing tested
+- [ ] File metadata update tested
+- [ ] Archive tested
+- [ ] Restore tested
+- [ ] Assignment tested
+- [ ] Assignment removal tested
+- [ ] Download tested
+- [ ] Presigned URL expiry tested
+- [ ] Unauthorized download tested
+- [ ] Cross-user access tested
+- [ ] Archived-user access tested
+
+### Processing Foundation
+
+- [ ] File-level processing status available
+- [ ] Page-level status available
+- [ ] `FilePage` unique `(fileId, pageNumber)` constraint verified
+- [ ] Page confidence can be stored
+- [ ] Page processing result can be stored as JSON
+- [ ] Inngest workflow integration tested separately
+- [ ] FastAPI page-processing integration tested separately
+
+---
+
+## Data Preservation Principle
+
+The File Management feature treats uploaded land records as persistent records.
+
+The normal lifecycle is:
+
+```text
+UPLOAD
+   ↓
+PROCESSING
+   ↓
+COMPLETED / NEEDS_VERIFICATION
+   ↓
+VERIFIED
+   ↓
+ARCHIVED
+   ↓
+RESTORED (if required)
+```
+
+Archiving changes the availability state of the file without destroying the underlying document or its processing history.
+
+The normal API therefore does not expose permanent deletion of official files.
+>>>>>>> Stashed changes

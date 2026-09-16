@@ -1,5 +1,6 @@
 import multer from 'multer';
-import { AppError } from '../types/error.types.js';
+
+import type { AppError } from '../types/error.types.js';
 
 const ALLOWED_MIME_TYPES = [
   'application/pdf',

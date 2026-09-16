@@ -5,6 +5,7 @@ import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { prisma } from '../lib/prisma.js';
 import { s3, storageBucket } from '../lib/storage.js';
 import { AppError } from '../types/error.types.js';
+import { validateUploadedFile } from '../utils/file-validation.js';
 
 const isPrismaUniqueConstraintError = (error: unknown): boolean => {
   return typeof error === 'object' && error !== null && 'code' in error && error.code === 'P2002';
@@ -111,6 +112,8 @@ export const uploadFile = async (req: Request, res: Response, next: NextFunction
       error.statusCode = 400;
       return next(error);
     }
+
+    validateUploadedFile(req.file);
 
     const clerkUserId = requireUserId(req, next);
     if (!clerkUserId) {
