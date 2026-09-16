@@ -1,25 +1,34 @@
 import type { Metadata, Viewport } from 'next';
+import React from 'react';
 import './globals.css';
+import { BRAND } from '@/constants/brand';
 
 export const viewport: Viewport = {
-  themeColor: '#1C1917',
+  themeColor: '#ffffff',
 };
 
 export const metadata: Metadata = {
-  title:
-    'Intelligent Land Record Digitization and Validation System — AI-Powered Document Intelligence',
-  description:
-    'A proposed AI-powered platform for automatically extracting structured information from scanned land records, handwritten documents, maps, and legacy PDF files, validating extracted records, and integrating with modern land information systems.',
+  title: `${BRAND.name} — ${BRAND.tagline}`,
+  description: BRAND.fullDescription,
   openGraph: {
     type: 'website',
-    title: 'Intelligent Land Record Digitization and Validation System',
-    description:
-      'Transforming legacy handwritten registers, scanned PDFs, and cadastral maps into structured, validated digital land records.',
+    title: `${BRAND.name} — ${BRAND.eyebrow}`,
+    description: `${BRAND.tagline} ${BRAND.shortDescription}`,
   },
 };
 
+// Dynamically integrate ClerkProvider if available
+let ClerkProviderComponent: React.ComponentType<{ children: React.ReactNode }> | null = null;
+try {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const clerk = require('@clerk/nextjs');
+  ClerkProviderComponent = clerk.ClerkProvider;
+} catch {
+  ClerkProviderComponent = null;
+}
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
-  return (
+  const content = (
     <html lang="en">
       <head>
         <link
@@ -31,4 +40,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body>{children}</body>
     </html>
   );
+
+  if (ClerkProviderComponent) {
+    return <ClerkProviderComponent>{content}</ClerkProviderComponent>;
+  }
+
+  return content;
 }
