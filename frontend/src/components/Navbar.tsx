@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
-import { BRAND, NAV_FEATURES, NAV_LINKS, AUTH_ROUTES } from '@/constants/brand';
+import { BRAND, NAV_FEATURES, AUTH_ROUTES } from '@/constants/brand';
 
 export default function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
