@@ -3,8 +3,10 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { BRAND, NAV_FEATURES, AUTH_ROUTES } from '@/constants/brand';
+import { useAuth } from '@/context/AuthContext';
 
 export default function Navbar() {
+  const { user, logout } = useAuth();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [featuresOpen, setFeaturesOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -228,22 +230,57 @@ export default function Navbar() {
           </Link>
         </nav>
 
-        {/* ── Right: Auth Action CTAs (Sign in & Get started / Sign up) ── */}
+        {/* ── Right: Auth Action CTAs (User Profile or Sign in / Sign up) ── */}
         <div className="nav-actions">
-          {/* Sign in — text link leading to Clerk sign-in */}
-          <Link
-            href={AUTH_ROUTES.signIn}
-            className="nav-link"
-            id="navSignIn"
-            style={{ padding: '6px 12px' }}
-          >
-            Sign in
-          </Link>
-
-          {/* Get started — border pill leading to Clerk sign-up */}
-          <Link href={AUTH_ROUTES.signUp} className="btn btn-secondary btn-sm" id="navGetStarted">
-            Get started
-          </Link>
+          {user ? (
+            <div className="nav-user-menu">
+              <div className="nav-user-badge">
+                <svg
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                >
+                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                  <circle cx="12" cy="7" r="4" />
+                </svg>
+                <span>{user.name || user.email}</span>
+                <span
+                  className={`nav-role-tag ${user.role === 'ADMIN' ? 'nav-role-tag-admin' : 'nav-role-tag-user'}`}
+                >
+                  {user.role}
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={logout}
+                className="btn btn-secondary btn-sm"
+                id="navSignOut"
+              >
+                Sign out
+              </button>
+            </div>
+          ) : (
+            <>
+              <Link
+                href={AUTH_ROUTES.signIn}
+                className="nav-link"
+                id="navSignIn"
+                style={{ padding: '6px 12px' }}
+              >
+                Sign in
+              </Link>
+              <Link
+                href={AUTH_ROUTES.signUp}
+                className="btn btn-secondary btn-sm"
+                id="navGetStarted"
+              >
+                Get started
+              </Link>
+            </>
+          )}
 
           {/* Mobile hamburger */}
           <button
@@ -307,22 +344,48 @@ export default function Navbar() {
           Contact
         </Link>
         <div className="nav-mobile-actions">
-          <Link
-            href={AUTH_ROUTES.signIn}
-            className="btn btn-secondary"
-            style={{ flex: 1, justifyContent: 'center' }}
-            onClick={() => setMobileOpen(false)}
-          >
-            Sign in
-          </Link>
-          <Link
-            href={AUTH_ROUTES.signUp}
-            className="btn btn-primary"
-            style={{ flex: 1, justifyContent: 'center' }}
-            onClick={() => setMobileOpen(false)}
-          >
-            Get started
-          </Link>
+          {user ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', width: '100%' }}>
+              <div className="nav-user-badge" style={{ justifyContent: 'center' }}>
+                <span>{user.name || user.email}</span>
+                <span
+                  className={`nav-role-tag ${user.role === 'ADMIN' ? 'nav-role-tag-admin' : 'nav-role-tag-user'}`}
+                >
+                  {user.role}
+                </span>
+              </div>
+              <button
+                type="button"
+                className="btn btn-secondary"
+                style={{ width: '100%', justifyContent: 'center' }}
+                onClick={() => {
+                  logout();
+                  setMobileOpen(false);
+                }}
+              >
+                Sign out
+              </button>
+            </div>
+          ) : (
+            <>
+              <Link
+                href={AUTH_ROUTES.signIn}
+                className="btn btn-secondary"
+                style={{ flex: 1, justifyContent: 'center' }}
+                onClick={() => setMobileOpen(false)}
+              >
+                Sign in
+              </Link>
+              <Link
+                href={AUTH_ROUTES.signUp}
+                className="btn btn-primary"
+                style={{ flex: 1, justifyContent: 'center' }}
+                onClick={() => setMobileOpen(false)}
+              >
+                Get started
+              </Link>
+            </>
+          )}
         </div>
       </div>
     </header>
