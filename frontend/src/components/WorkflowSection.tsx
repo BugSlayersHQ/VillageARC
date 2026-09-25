@@ -2,171 +2,140 @@
 
 import React from 'react';
 
+// Workflow data derived from the existing WorkflowSection.tsx 6-stage pipeline,
+// condensed to 4 canonical steps per design brief (SCAN → EXTRACT → VALIDATE → STRUCTURE)
+const STEPS = [
+  {
+    id: 'scan',
+    label: 'Scan',
+    desc: 'Bring legacy PDFs, scanned registers, and cadastral maps into the workflow.',
+    icon: (
+      // Document with scan lines
+      <svg
+        width="18"
+        height="18"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        aria-hidden="true"
+      >
+        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+        <polyline points="14 2 14 8 20 8" />
+        <line x1="8" y1="13" x2="16" y2="13" />
+        <line x1="8" y1="17" x2="12" y2="17" />
+      </svg>
+    ),
+  },
+  {
+    id: 'extract',
+    label: 'Extract',
+    desc: 'Understand document layout and extract relevant field information using document intelligence.',
+    icon: (
+      // Layers / stack — NLP extraction
+      <svg
+        width="18"
+        height="18"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        aria-hidden="true"
+      >
+        <polygon points="12 2 2 7 12 12 22 7 12 2" />
+        <polyline points="2 17 12 22 22 17" />
+        <polyline points="2 12 12 17 22 12" />
+      </svg>
+    ),
+  },
+  {
+    id: 'validate',
+    label: 'Validate',
+    desc: 'Review and verify extracted information against master databases and business rules.',
+    icon: (
+      // Shield check — validation / governance
+      <svg
+        width="18"
+        height="18"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        aria-hidden="true"
+      >
+        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+        <polyline points="9 12 11 14 15 10" />
+      </svg>
+    ),
+  },
+  {
+    id: 'structure',
+    label: 'Structure',
+    desc: 'Turn processed information into usable digital records ready for LRMS and GIS integration.',
+    icon: (
+      // Database / grid — structured output
+      <svg
+        width="18"
+        height="18"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        aria-hidden="true"
+      >
+        <ellipse cx="12" cy="5" rx="9" ry="3" />
+        <path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3" />
+        <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5" />
+      </svg>
+    ),
+  },
+];
+
 export default function WorkflowSection() {
   return (
-    <>
-      <section id="workflow" className="section">
-        <div className="container">
-          <div className="section-header">
-            <div className="chip">Proposed Operational Architecture</div>
-            <h2 className="headline-lg">How the system works from intake to integration.</h2>
-            <p className="body-md">
-              A structured 6-stage lifecycle designed to convert unstandardized legacy land records
-              into verified, modern digital datasets.
-            </p>
-          </div>
-
-          <div className="pipeline-flow-container">
-            <div className="pipeline-step-box">
-              <span className="pipeline-step-number">01</span>
-              <span className="pipeline-step-title">Upload</span>
-              <span className="pipeline-step-desc">Scanned PDFs &amp; maps</span>
-            </div>
-            <div className="pipeline-step-box">
-              <span className="pipeline-step-number">02</span>
-              <span className="pipeline-step-title">AI Recognition</span>
-              <span className="pipeline-step-desc">OCR &amp; Computer Vision</span>
-            </div>
-            <div className="pipeline-step-box">
-              <span className="pipeline-step-number">03</span>
-              <span className="pipeline-step-title">Extraction</span>
-              <span className="pipeline-step-desc">NLP/ML field mapping</span>
-            </div>
-            <div className="pipeline-step-box">
-              <span className="pipeline-step-number">04</span>
-              <span className="pipeline-step-title">Validation</span>
-              <span className="pipeline-step-desc">Business rules &amp; checks</span>
-            </div>
-            <div className="pipeline-step-box">
-              <span className="pipeline-step-number">05</span>
-              <span className="pipeline-step-title">Verification</span>
-              <span className="pipeline-step-desc">Human-in-the-loop</span>
-            </div>
-            <div className="pipeline-step-box">
-              <span className="pipeline-step-number">06</span>
-              <span className="pipeline-step-title">Integration</span>
-              <span className="pipeline-step-desc">LRMS &amp; GIS platforms</span>
-            </div>
-          </div>
-
-          <div className="workflow-grid-6">
-            <div className="card bento-card">
-              <div className="card-inner">
-                <div style={{ marginBottom: '10px' }} className="chip chip-accent">
-                  STAGE 01
-                </div>
-                <h3 className="headline-sm">Document Upload</h3>
-                <p
-                  style={{ color: 'var(--color-secondary)', marginBottom: '12px' }}
-                  className="body-sm"
-                >
-                  Upload scanned PDFs, images, handwritten registers, cadastral maps, and historical
-                  land-record documents through a user-friendly interface.
-                </p>
-                <div style={{ fontSize: '11px', color: 'var(--color-muted)' }}>
-                  Input formats: Scanned PDF, TIFF, PNG, JPEG, Cadastral sheets
-                </div>
-              </div>
-            </div>
-
-            <div className="card bento-card">
-              <div className="card-inner">
-                <div style={{ marginBottom: '10px' }} className="chip chip-accent">
-                  STAGE 02
-                </div>
-                <h3 className="headline-sm">AI Recognition</h3>
-                <p
-                  style={{ color: 'var(--color-secondary)', marginBottom: '12px' }}
-                  className="body-sm"
-                >
-                  Advanced OCR and Computer Vision analyze document layouts, recognize printed and
-                  handwritten text in multiple Indian languages, and process visual features.
-                </p>
-                <div style={{ fontSize: '11px', color: 'var(--color-muted)' }}>
-                  Capabilities: Multilingual character recognition, layout segmentation
-                </div>
-              </div>
-            </div>
-
-            <div className="card bento-card">
-              <div className="card-inner">
-                <div style={{ marginBottom: '10px' }} className="chip chip-accent">
-                  STAGE 03
-                </div>
-                <h3 className="headline-sm">Intelligent Extraction</h3>
-                <p
-                  style={{ color: 'var(--color-secondary)', marginBottom: '12px' }}
-                  className="body-sm"
-                >
-                  Natural Language Processing and Machine Learning classify recognized data into
-                  predefined fields such as landowner, survey number, khasra, khata, and plot area.
-                </p>
-                <div style={{ fontSize: '11px', color: 'var(--color-muted)' }}>
-                  Output: Structured land attributes mapped to predefined schemas
-                </div>
-              </div>
-            </div>
-
-            <div className="card bento-card">
-              <div className="card-inner">
-                <div style={{ marginBottom: '10px' }} className="chip chip-accent">
-                  STAGE 04
-                </div>
-                <h3 className="headline-sm">Automated Validation</h3>
-                <p
-                  style={{ color: 'var(--color-secondary)', marginBottom: '12px' }}
-                  className="body-sm"
-                >
-                  The validation engine applies predefined business rules, performs cross-database
-                  verification against master databases, detects duplicates, and checks consistency.
-                </p>
-                <div style={{ fontSize: '11px', color: 'var(--color-muted)' }}>
-                  Validation: Rule consistency, master database verification, duplicate checks
-                </div>
-              </div>
-            </div>
-
-            <div className="card bento-card">
-              <div className="card-inner">
-                <div style={{ marginBottom: '10px' }} className="chip chip-accent">
-                  STAGE 05
-                </div>
-                <h3 className="headline-sm">Human Verification</h3>
-                <p
-                  style={{ color: 'var(--color-secondary)', marginBottom: '12px' }}
-                  className="body-sm"
-                >
-                  Fields with low confidence or flagged ambiguities are automatically routed to
-                  revenue officials for manual review and human-assisted verification.
-                </p>
-                <div style={{ fontSize: '11px', color: 'var(--color-muted)' }}>
-                  Governance: Official review queue, side-by-side image comparison
-                </div>
-              </div>
-            </div>
-
-            <div className="card bento-card">
-              <div className="card-inner">
-                <div style={{ marginBottom: '10px' }} className="chip chip-accent">
-                  STAGE 06
-                </div>
-                <h3 className="headline-sm">Digital Integration</h3>
-                <p
-                  style={{ color: 'var(--color-secondary)', marginBottom: '12px' }}
-                  className="body-sm"
-                >
-                  Verified, structured records are designed for proposed integration with LRMS,
-                  DILRMP databases, GIS platforms, cadastral maps, and other government databases
-                  via APIs.
-                </p>
-                <div style={{ fontSize: '11px', color: 'var(--color-muted)' }}>
-                  Proposed Integration: RESTful APIs, GraphQL, GIS spatial integration
-                </div>
-              </div>
-            </div>
-          </div>
+    <section id="workflow" className="workflow">
+      <div className="container workflow-inner">
+        {/* Section header */}
+        <div className="workflow-header">
+          <p className="eyebrow" style={{ marginBottom: '8px' }}>
+            How it works
+          </p>
+          <h2
+            style={{
+              fontSize: 'var(--fs-h4)',
+              fontWeight: 700,
+              color: 'var(--color-ink)',
+              letterSpacing: 'var(--ls-h4)',
+            }}
+          >
+            Four steps from paper to digital.
+          </h2>
         </div>
-      </section>
-    </>
+
+        {/* Steps */}
+        <div className="workflow-steps" role="list">
+          {STEPS.map((step) => (
+            <div key={step.id} id={`step-${step.id}`} className="workflow-step" role="listitem">
+              {/* Icon circle */}
+              <div className="workflow-step-num" aria-hidden="true">
+                {step.icon}
+              </div>
+              <div className="workflow-step-text">
+                <span className="workflow-step-label">{step.label}</span>
+                <p className="workflow-step-desc">{step.desc}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
   );
 }

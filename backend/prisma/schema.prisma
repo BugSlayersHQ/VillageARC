@@ -1,8 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Get a free hosted Postgres database in seconds: `npx create-db`
-
 generator client {
   provider = "prisma-client"
   output   = "../src/generated/prisma"
@@ -10,4 +5,106 @@ generator client {
 
 datasource db {
   provider = "postgresql"
+}
+
+enum FileStatus {
+  UPLOADED
+  PROCESSING
+  COMPLETED
+  NEEDS_VERIFICATION
+  VERIFIED
+  FAILED
+}
+
+enum FilePageStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  NEEDS_VERIFICATION
+  VERIFIED
+  FAILED_PERMANENT
+}
+
+model Admin {
+  id           Int      @id @default(autoincrement())
+  name         String?
+  email        String?  @unique
+  passwordHash String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  users       User[]
+  files       File[]
+  assignments FileAssignment[]
+}
+
+model User {
+  id           Int              @id @default(autoincrement())
+  name         String
+  email        String           @unique
+  passwordHash String?
+  phone        String?
+
+  adminId      Int
+  admin        Admin            @relation(fields: [adminId], references: [id])
+
+  assignments  FileAssignment[] @relation("FileAssignments")
+
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+}
+
+model File {
+  id           Int        @id @default(autoincrement())
+  originalName String
+  fileName     String
+  mimeType     String
+  size         Int
+  storageKey   String
+
+  status       FileStatus @default(UPLOADED)
+
+  uploadedById Int
+  uploadedBy   Admin      @relation(fields: [uploadedById], references: [id])
+
+  isArchived   Boolean   @default(false)
+  archivedAt   DateTime?
+  archivedById Int?
+
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  assignments  FileAssignment[]
+  pages        FilePage[]
+}
+
+model FileAssignment {
+  id         Int      @id @default(autoincrement())
+  fileId     Int
+  userId     Int
+  assignedBy Int
+
+  file       File     @relation(fields: [fileId], references: [id], onDelete: Cascade)
+  user       User     @relation("FileAssignments", fields: [userId], references: [id], onDelete: Cascade)
+  assigner   Admin    @relation(fields: [assignedBy], references: [id])
+
+  createdAt  DateTime @default(now())
+
+  @@unique([fileId, userId])
+}
+
+model FilePage {
+  id         Int            @id @default(autoincrement())
+  fileId     Int
+  pageNumber Int
+  status     FilePageStatus @default(PENDING)
+  confidence Float?
+  result     Json?
+
+  file       File           @relation(fields: [fileId], references: [id], onDelete: Cascade)
+
+  createdAt  DateTime       @default(now())
+  updatedAt  DateTime       @updatedAt
+
+  @@unique([fileId, pageNumber])
 }
