@@ -28,7 +28,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%231C1917'/><polygon points='16,7 25,12 25,22 16,27 7,22 7,12' fill='none' stroke='%23FE551B' stroke-width='2.5'/><circle cx='16' cy='16' r='3' fill='%23FE551B'/></svg>"
         />
       </head>
-      <body>
+      <body suppressHydrationWarning>
         <AuthProvider>{children}</AuthProvider>
       </body>
     </html>

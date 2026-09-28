@@ -225,6 +225,9 @@ export default function Navbar() {
           <Link href="#workflow" className="nav-link">
             How it works
           </Link>
+          <Link href="/review" className="nav-link">
+            Field Review
+          </Link>
           <Link href="#contact" className="nav-link">
             Contact
           </Link>
@@ -339,6 +342,9 @@ export default function Navbar() {
         </Link>
         <Link href="#workflow" className="nav-link" onClick={() => setMobileOpen(false)}>
           Features
+        </Link>
+        <Link href="/review" className="nav-link" onClick={() => setMobileOpen(false)}>
+          Field Review
         </Link>
         <Link href="#contact" className="nav-link" onClick={() => setMobileOpen(false)}>
           Contact
